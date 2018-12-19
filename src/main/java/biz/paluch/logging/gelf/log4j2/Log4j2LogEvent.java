@@ -1,11 +1,5 @@
 package biz.paluch.logging.gelf.log4j2;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.logging.log4j.Level;
-
 import biz.paluch.logging.gelf.DynamicMdcMessageField;
 import biz.paluch.logging.gelf.GelfUtil;
 import biz.paluch.logging.gelf.LogEvent;
@@ -14,6 +8,11 @@ import biz.paluch.logging.gelf.MdcMessageField;
 import biz.paluch.logging.gelf.MessageField;
 import biz.paluch.logging.gelf.Values;
 import biz.paluch.logging.gelf.intern.GelfMessage;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 
 /**
  * @author Mark Paluch
@@ -29,6 +28,13 @@ class Log4j2LogEvent implements LogEvent {
     @Override
     public String getMessage() {
         return logEvent.getMessage().getFormattedMessage();
+    }
+
+    @Override
+    public String getMessageWithPatern(String pattern) {
+        PatternLayout layout = PatternLayout.newBuilder().withPattern(pattern).build();
+        String msg = layout.toSerializable(logEvent);
+        return msg;
     }
 
     @Override

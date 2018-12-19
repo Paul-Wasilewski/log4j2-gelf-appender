@@ -1,21 +1,20 @@
 package biz.paluch.logging.gelf;
 
+import biz.paluch.logging.RuntimeContainer;
+import biz.paluch.logging.StackTraceFilter;
 import static biz.paluch.logging.gelf.GelfMessageBuilder.newInstance;
-
+import biz.paluch.logging.gelf.LogMessageField.NamedLogField;
+import biz.paluch.logging.gelf.intern.GelfMessage;
+import biz.paluch.logging.gelf.intern.HostAndPortProvider;
+import biz.paluch.logging.gelf.intern.PoolingGelfMessageBuilder;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import biz.paluch.logging.RuntimeContainer;
-import biz.paluch.logging.StackTraceFilter;
-import biz.paluch.logging.gelf.LogMessageField.NamedLogField;
-import biz.paluch.logging.gelf.intern.GelfMessage;
-import biz.paluch.logging.gelf.intern.HostAndPortProvider;
-import biz.paluch.logging.gelf.intern.PoolingGelfMessageBuilder;
-
 /**
- * Creates {@link GelfMessage} based on various {@link LogEvent}. A {@link LogEvent} encapsulates log-framework specifics and
+ * Creates {@link GelfMessage} based on various {@link LogEvent}. A {@link LogEvent} encapsulates log-framework
+ * specifics and
  * exposes commonly used details of log events.
  *
  * @author Mark Paluch
@@ -36,7 +35,7 @@ public class GelfMessageAssembler implements HostAndPortProvider {
     private static final int MAX_PORT_NUMBER = 65535;
     private static final int MAX_MESSAGE_SIZE = Integer.MAX_VALUE;
     private static final Set<NamedLogField> SOURCE_FIELDS = EnumSet.of(NamedLogField.SourceClassName,
-            NamedLogField.SourceSimpleClassName, NamedLogField.SourceMethodName, NamedLogField.SourceLineNumber);
+        NamedLogField.SourceSimpleClassName, NamedLogField.SourceMethodName, NamedLogField.SourceLineNumber);
 
     private String host;
     private String version = GelfMessage.GELF_VERSION;
@@ -55,6 +54,9 @@ public class GelfMessageAssembler implements HostAndPortProvider {
 
     private final ThreadLocal<PoolingGelfMessageBuilder> builders;
 
+    private String shortMessagePattern;
+    private String fullMessagePattern;
+
     public GelfMessageAssembler() {
 
         if (PoolingGelfMessageBuilder.usePooling()) {
@@ -66,7 +68,8 @@ public class GelfMessageAssembler implements HostAndPortProvider {
                     return PoolingGelfMessageBuilder.newInstance();
                 }
             };
-        } else {
+        }
+        else {
             builders = null;
         }
     }
@@ -94,10 +97,11 @@ public class GelfMessageAssembler implements HostAndPortProvider {
 
         originHost = propertyProvider.getProperty(PropertyProvider.PROPERTY_ORIGIN_HOST);
         setExtractStackTrace(propertyProvider.getProperty(PropertyProvider.PROPERTY_EXTRACT_STACKTRACE));
-        setFilterStackTrace("true".equalsIgnoreCase(propertyProvider.getProperty(PropertyProvider.PROPERTY_FILTER_STACK_TRACE)));
+        setFilterStackTrace("true".equalsIgnoreCase(propertyProvider.getProperty(
+            PropertyProvider.PROPERTY_FILTER_STACK_TRACE)));
 
         String includeLogMessageParameters = propertyProvider
-                .getProperty(PropertyProvider.PROPERTY_INCLUDE_LOG_MESSAGE_PARAMETERS);
+            .getProperty(PropertyProvider.PROPERTY_INCLUDE_LOG_MESSAGE_PARAMETERS);
         if (includeLogMessageParameters != null && !includeLogMessageParameters.trim().equals("")) {
             setIncludeLogMessageParameters("true".equalsIgnoreCase(includeLogMessageParameters));
         }
@@ -126,6 +130,7 @@ public class GelfMessageAssembler implements HostAndPortProvider {
      * Produce a {@link GelfMessage}.
      *
      * @param logEvent the log event
+     *
      * @return a new GelfMessage
      */
     public GelfMessage createGelfMessage(LogEvent logEvent) {
@@ -133,7 +138,13 @@ public class GelfMessageAssembler implements HostAndPortProvider {
         GelfMessageBuilder builder = builders != null ? builders.get().recycle() : newInstance();
 
         Throwable throwable = logEvent.getThrowable();
-        String message = logEvent.getMessage();
+        String message;
+        if (this.getShortMessagePattern() != null) {
+            message = logEvent.getMessageWithPatern(this.getShortMessagePattern());
+        }
+        else {
+            message = logEvent.getMessage();
+        }
 
         if (GelfMessage.isEmpty(message) && throwable != null) {
             message = throwable.toString();
@@ -143,8 +154,16 @@ public class GelfMessageAssembler implements HostAndPortProvider {
         if (message.length() > MAX_SHORT_MESSAGE_LENGTH) {
             shortMessage = message.substring(0, MAX_SHORT_MESSAGE_LENGTH - 1);
         }
+        String fullMessage;
+        if (this.getFullMessagePattern() != null) {
+            fullMessage = logEvent.getMessageWithPatern(this.getFullMessagePattern());
+        }
+        else {
+            fullMessage = shortMessage;
+        }
 
-        builder.withShortMessage(shortMessage).withFullMessage(message).withJavaTimestamp(logEvent.getLogTimestamp());
+        builder.withShortMessage(shortMessage).withFullMessage(fullMessage).
+            withJavaTimestamp(logEvent.getLogTimestamp());
         builder.withLevel(logEvent.getSyslogLevel());
         builder.withVersion(getVersion());
         builder.withAdditionalFieldTypes(additionalFieldTypes);
@@ -222,8 +241,10 @@ public class GelfMessageAssembler implements HostAndPortProvider {
 
     private void addStackTrace(Throwable thrown, GelfMessageBuilder builder) {
         if (stackTraceExtraction.isFilter()) {
-            builder.withField(FIELD_STACK_TRACE, StackTraceFilter.getFilteredStackTrace(thrown, stackTraceExtraction.getRef()));
-        } else {
+            builder.withField(FIELD_STACK_TRACE, StackTraceFilter.getFilteredStackTrace(thrown, stackTraceExtraction.
+                getRef()));
+        }
+        else {
             final StringWriter sw = new StringWriter();
             StackTraceFilter.getThrowable(thrown, stackTraceExtraction.getRef()).printStackTrace(new PrintWriter(sw));
             builder.withField(FIELD_STACK_TRACE, sw.toString());
@@ -233,14 +254,16 @@ public class GelfMessageAssembler implements HostAndPortProvider {
     private void setupStaticFields(PropertyProvider propertyProvider) {
         int fieldNumber = 0;
         while (true) {
-            final String property = propertyProvider.getProperty(PropertyProvider.PROPERTY_ADDITIONAL_FIELD + fieldNumber);
+            final String property = propertyProvider.getProperty(PropertyProvider.PROPERTY_ADDITIONAL_FIELD
+                + fieldNumber);
             if (null == property) {
                 break;
             }
             final int index = property.indexOf('=');
             if (-1 != index) {
 
-                StaticMessageField field = new StaticMessageField(property.substring(0, index), property.substring(index + 1));
+                StaticMessageField field = new StaticMessageField(property.substring(0, index), property.substring(index
+                    + 1));
                 addField(field);
             }
 
@@ -251,7 +274,8 @@ public class GelfMessageAssembler implements HostAndPortProvider {
     private void setupAdditionalFieldTypes(PropertyProvider propertyProvider) {
         int fieldNumber = 0;
         while (true) {
-            final String property = propertyProvider.getProperty(PropertyProvider.PROPERTY_ADDITIONAL_FIELD_TYPE + fieldNumber);
+            final String property = propertyProvider.getProperty(PropertyProvider.PROPERTY_ADDITIONAL_FIELD_TYPE
+                + fieldNumber);
             if (null == property) {
                 break;
             }
@@ -306,7 +330,8 @@ public class GelfMessageAssembler implements HostAndPortProvider {
 
     public void setPort(int port) {
         if (port > MAX_PORT_NUMBER || port < 1) {
-            throw new IllegalArgumentException("Invalid port number: " + port + ", supported range: 1-" + MAX_PORT_NUMBER);
+            throw new IllegalArgumentException("Invalid port number: " + port + ", supported range: 1-"
+                + MAX_PORT_NUMBER);
         }
         this.port = port;
     }
@@ -384,7 +409,7 @@ public class GelfMessageAssembler implements HostAndPortProvider {
 
         if (maximumMessageSize > MAX_MESSAGE_SIZE || maximumMessageSize < 1) {
             throw new IllegalArgumentException(
-                    "Invalid maximum message size: " + maximumMessageSize + ", supported range: 1-" + MAX_MESSAGE_SIZE);
+                "Invalid maximum message size: " + maximumMessageSize + ", supported range: 1-" + MAX_MESSAGE_SIZE);
         }
 
         this.maximumMessageSize = maximumMessageSize;
@@ -398,10 +423,26 @@ public class GelfMessageAssembler implements HostAndPortProvider {
 
         if (!GelfMessage.GELF_VERSION_1_0.equals(version) && !GelfMessage.GELF_VERSION_1_1.equals(version)) {
             throw new IllegalArgumentException("Invalid GELF version: " + version + ", supported range: "
-                    + GelfMessage.GELF_VERSION_1_0 + ", " + GelfMessage.GELF_VERSION_1_1);
+                + GelfMessage.GELF_VERSION_1_0 + ", " + GelfMessage.GELF_VERSION_1_1);
         }
 
         this.version = version;
+    }
+
+    public String getFullMessagePattern() {
+        return fullMessagePattern;
+    }
+
+    public void setFullMessagePattern(String fullMessagePattern) {
+        this.fullMessagePattern = fullMessagePattern;
+    }
+
+    public String getShortMessagePattern() {
+        return shortMessagePattern;
+    }
+
+    public void setShortMessagePattern(String shortMessagePattern) {
+        this.shortMessagePattern = shortMessagePattern;
     }
 
     static class StackTraceExtraction {
@@ -423,6 +464,7 @@ public class GelfMessageAssembler implements HostAndPortProvider {
          * Parse the stack trace filtering value.
          *
          * @param value
+         *
          * @return
          */
         public static StackTraceExtraction from(String value, boolean filter) {

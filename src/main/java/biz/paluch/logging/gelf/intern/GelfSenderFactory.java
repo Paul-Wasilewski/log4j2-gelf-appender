@@ -1,5 +1,6 @@
 package biz.paluch.logging.gelf.intern;
 
+import biz.paluch.logging.gelf.intern.sender.DefaultGelfSenderProvider;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
@@ -9,13 +10,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-import biz.paluch.logging.gelf.intern.sender.DefaultGelfSenderProvider;
-import biz.paluch.logging.gelf.intern.sender.RedisGelfSenderProvider;
-
 /**
- * Factory to create a {@link GelfSender} based on the host and protocol details. This factory uses Java's {@link ServiceLoader}
+ * Factory to create a {@link GelfSender} based on the host and protocol details. This factory uses Java's
+ * {@link ServiceLoader}
  * mechanism to discover classes implementing {@link GelfSenderProvider}.
- * 
+ *
  * @author Mark Paluch
  * @author Aleksandar Stojadinovic
  * @since 26.09.13 15:12
@@ -24,14 +23,16 @@ public final class GelfSenderFactory {
 
     /**
      * Create a GelfSender based on the configuration.
-     * 
-     * @param hostAndPortProvider the host and port
-     * @param errorReporter the error reporter
+     *
+     * @param hostAndPortProvider          the host and port
+     * @param errorReporter                the error reporter
      * @param senderSpecificConfigurations configuration map
+     *
      * @return a new {@link GelfSender} instance
      */
-    public static GelfSender createSender(final HostAndPortProvider hostAndPortProvider, final ErrorReporter errorReporter,
-            final Map<String, Object> senderSpecificConfigurations) {
+    public static GelfSender createSender(final HostAndPortProvider hostAndPortProvider,
+        final ErrorReporter errorReporter,
+        final Map<String, Object> senderSpecificConfigurations) {
         GelfSenderConfiguration senderConfiguration = new GelfSenderConfiguration() {
 
             @Override
@@ -61,8 +62,9 @@ public final class GelfSenderFactory {
 
     /**
      * Create a GelfSender based on the configuration.
-     * 
+     *
      * @param senderConfiguration the configuration
+     *
      * @return a new {@link GelfSender} instance
      */
     public static GelfSender createSender(GelfSenderConfiguration senderConfiguration) {
@@ -70,7 +72,8 @@ public final class GelfSenderFactory {
         ErrorReporter errorReporter = senderConfiguration.getErrorReporter();
         if (senderConfiguration.getHost() == null) {
             senderConfiguration.getErrorReporter().reportError("GELF server hostname is empty!", null);
-        } else {
+        }
+        else {
 
             try {
                 for (GelfSenderProvider provider : SenderProviderHolder.getSenderProvider()) {
@@ -78,8 +81,9 @@ public final class GelfSenderFactory {
                         return provider.create(senderConfiguration);
                     }
                 }
-                senderConfiguration.getErrorReporter().reportError("No sender found for host " + senderConfiguration.getHost(),
-                        null);
+                senderConfiguration.getErrorReporter().reportError("No sender found for host " + senderConfiguration.
+                    getHost(),
+                    null);
                 return null;
             } catch (UnknownHostException e) {
                 errorReporter.reportError("Unknown GELF server hostname:" + senderConfiguration.getHost(), e);
@@ -108,7 +112,8 @@ public final class GelfSenderFactory {
     // For thread safe lazy intialization of provider list
     private static class SenderProviderHolder {
 
-        private static ServiceLoader<GelfSenderProvider> gelfSenderProvider = ServiceLoader.load(GelfSenderProvider.class);
+        private static ServiceLoader<GelfSenderProvider> gelfSenderProvider = ServiceLoader.load(
+            GelfSenderProvider.class);
         private static List<GelfSenderProvider> providerList = new ArrayList<GelfSenderProvider>();
         private static List<GelfSenderProvider> addedProviders = new ArrayList<GelfSenderProvider>();
 
@@ -117,7 +122,6 @@ public final class GelfSenderFactory {
             while (iter.hasNext()) {
                 providerList.add(iter.next());
             }
-            providerList.add(new RedisGelfSenderProvider());
             providerList.add(new DefaultGelfSenderProvider());
         }
 
