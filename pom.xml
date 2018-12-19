@@ -17,11 +17,6 @@
         <tag>HEAD</tag>
     </scm>
 
-    <issueManagement>
-        <system>GitHub</system>
-        <url>https://github.com/mp911de/logstash-gelf/issues</url>
-    </issueManagement>
-
     <licenses>
         <license>
             <name>MIT License</name>
@@ -35,25 +30,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.target>10</maven.compiler.target>
         <maven.compiler.source>10</maven.compiler.source>
-        <!-- Versions -->
         <log4j2.version>2.11.1</log4j2.version>
-        <junit5.version>5.2.0</junit5.version>
-        <assertj.version>3.10.0</assertj.version>
-        <mockito.version>2.18.3</mockito.version>
-        <jackson.version>2.9.5</jackson.version>
-        <netty-all.version>4.1.25.Final</netty-all.version>
-
-        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
-        <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
-        <maven-project-info-reports-plugin.version>2.7</maven-project-info-reports-plugin.version>
-        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-scm-publish-plugin.version>1.1</maven-scm-publish-plugin.version>
-        <tempus-fugit.version>1.1</tempus-fugit.version>
-        <maven-dependency-plugin.version>3.0.2</maven-dependency-plugin.version>
-        <maven-assembly-plugin.version>3.1.0</maven-assembly-plugin.version>
-        <maven-scm-provider-gitexe.version>1.9.5</maven-scm-provider-gitexe.version>
-        <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
-        <maven.jacoco.version>0.7.9</maven.jacoco.version>
     </properties>
 
     <developers>
@@ -67,7 +44,6 @@
             <email>paul.wasileski@ymail.com</email>
             <name>Paul Wasilewski</name>
             <timezone>Europe/Berlin</timezone>
-            <url>http://www.paluch.biz</url>
         </developer>
     </developers>
 
@@ -89,54 +65,8 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>${maven-dependency-plugin.version}</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
-                <configuration>
-                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <includes>
-                        <include>**/*Test.java</include>
-                        <include>**/*Tests.java</include>
-                    </includes>
-
-                    <excludes>
-                        <exclude>**/*IntegrationTests.java</exclude>
-                        <exclude>**/*IntegrationTest.java</exclude>
-                    </excludes>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.platform</groupId>
-                        <artifactId>junit-platform-surefire-provider</artifactId>
-                        <version>1.0.2</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>${junit5.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>${maven-release-plugin.version}</version>
-                <configuration>
-                    <releaseProfiles>sonatype-oss-release</releaseProfiles>
-                    <goals>deploy</goals>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>${maven-resources-plugin.version}</version>
+                <version>3.1.0</version>
             </plugin>
         </plugins>
     </build>
@@ -155,15 +85,6 @@
             <version>${log4j2.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j2.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <reporting>
@@ -171,7 +92,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>${maven-javadoc-plugin.version}</version>
+                <version>3.0.1</version>
             </plugin>
         </plugins>
     </reporting>
