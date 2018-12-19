@@ -1,4 +1,5 @@
-log4j2-gelf-appender
+log4j2-gelf-appender                                                         
+[![Build Status](https://travis-ci.org/Paul-Wasilewski/log4j2-gelf-appender.svg?branch=master)](https://travis-ci.org/Paul-Wasilewski/log4j2-gelf-appender)
 =========================
 This is a highly customized version of [logstash-gelf](https://github.com/mp911de/logstash-gelf) which supports only log4j2. I highly recommend to use the original version.  
 
